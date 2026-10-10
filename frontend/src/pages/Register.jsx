@@ -10,13 +10,14 @@ const Register = () => {
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
     
@@ -30,11 +31,27 @@ const Register = () => {
       return;
     }
 
-    // Mock registration success
-    setSuccess(true);
-    setTimeout(() => {
-      navigate('/login');
-    }, 2000);
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          password: formData.password
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Unable to create account');
+
+      setSuccess(true);
+      setTimeout(() => navigate('/login'), 1500);
+    } catch (requestError) {
+      setError(requestError.message || 'Unable to connect to the server');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -89,8 +106,8 @@ const Register = () => {
               required 
             />
           </div>
-          <button type="submit" className="btn btn-primary mt-2" style={{ width: '100%' }}>
-            Create Account
+          <button type="submit" className="btn btn-primary mt-2" style={{ width: '100%' }} disabled={isSubmitting}>
+            {isSubmitting ? 'Creating account...' : 'Create Account'}
           </button>
         </form>
 

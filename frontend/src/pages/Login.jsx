@@ -4,29 +4,39 @@ import { Link, useNavigate } from 'react-router-dom';
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-    
-    // Mock authentication
-    if (formData.email === 'student@gmail.com' && formData.password === 'password') {
-      const user = { id: 1, name: 'Alice Johnson', email: 'student@gmail.com', role: 'student' };
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email.trim(),
+          password: formData.password
+        })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Unable to log in');
+
+      const user = { ...data, id: data._id };
       localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('token', data.token);
       localStorage.setItem('isLoggedIn', 'true');
-      navigate('/student/dashboard');
-    } else if (formData.email === 'admin@gmail.com' && formData.password === 'password') {
-      const user = { id: 999, name: 'Admin User', email: 'admin@gmail.com', role: 'admin' };
-      localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('isLoggedIn', 'true');
-      navigate('/admin/dashboard');
-    } else {
-      setError('Invalid email or password. Use student@gmail.com or admin@gmail.com with password "password".');
+      navigate(user.role === 'admin' ? '/admin/dashboard' : '/student/dashboard');
+    } catch (requestError) {
+      setError(requestError.message || 'Unable to connect to the server');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -60,17 +70,12 @@ const Login = () => {
               required 
             />
           </div>
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>
-            Login
+          <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={isSubmitting}>
+            {isSubmitting ? 'Logging in...' : 'Login'}
           </button>
         </form>
         
         <div className="mt-4 text-center">
-          <p className="text-light text-sm">
-            Mock Login Info:<br/>
-            Student: student@gmail.com | pass: password<br/>
-            Admin: admin@gmail.com | pass: password
-          </p>
         </div>
 
         <div className="mt-6 text-center">
