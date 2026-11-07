@@ -3,38 +3,47 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 
+const ADMIN_EMAIL = 'admin@gmail.com';
+const ADMIN_PASSWORD = 'password';
+
 const seedAdmin = async () => {
   try {
     if (!process.env.MONGO_URI) {
       console.error('Missing MONGO_URI in .env');
-      process.exit(1);
+      process.exitCode = 1;
+      return;
     }
+
     await mongoose.connect(process.env.MONGO_URI);
-    
-    const adminExists = await User.findOne({ email: 'admin@sportsportal.com' });
-    
-    if (adminExists) {
-      console.log('Admin user already exists');
-      process.exit(0);
-    }
 
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash('Admin@123', salt);
+    const hashedPassword = await bcrypt.hash(ADMIN_PASSWORD, salt);
 
-    await User.create({
-      name: 'Admin',
-      email: 'admin@sportsportal.com',
-      password: hashedPassword,
-      role: 'admin'
-    });
+    await User.updateMany(
+      { role: 'admin', email: { $ne: ADMIN_EMAIL } },
+      { $set: { role: 'student' } }
+    );
 
-    console.log('Admin user created successfully!');
-    console.log('Email: admin@sportsportal.com');
-    console.log('Password: Admin@123');
-    process.exit(0);
+    await User.findOneAndUpdate(
+      { email: ADMIN_EMAIL },
+      {
+        $set: {
+          name: 'Admin',
+          password: hashedPassword,
+          role: 'admin'
+        },
+        $setOnInsert: { email: ADMIN_EMAIL }
+      },
+      { upsert: true, new: true, runValidators: true }
+    );
+
+    console.log('Admin account is ready.');
+    console.log(`Email: ${ADMIN_EMAIL}`);
   } catch (error) {
     console.error(`Error: ${error.message}`);
-    process.exit(1);
+    process.exitCode = 1;
+  } finally {
+    await mongoose.disconnect();
   }
 };
 

@@ -71,7 +71,11 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ email: email.trim().toLowerCase() })
       .collation({ locale: 'en', strength: 2 });
 
-    if (user && (await bcrypt.compare(password, user.password))) {
+    if (
+      user
+      && (user.role !== 'admin' || user.email === 'admin@gmail.com')
+      && (await bcrypt.compare(password, user.password))
+    ) {
       res.json({
         _id: user._id,
         name: user.name,
