@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { apiRequest } from '../api';
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -17,7 +18,7 @@ const Login = () => {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/login`, {
+      const data = await apiRequest('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -25,8 +26,6 @@ const Login = () => {
           password: formData.password
         })
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Unable to log in');
 
       const user = { ...data, id: data._id };
       localStorage.setItem('user', JSON.stringify(user));

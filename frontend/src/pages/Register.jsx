@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { apiRequest } from '../api';
 
 const Register = () => {
   const [formData, setFormData] = useState({ 
@@ -33,7 +34,7 @@ const Register = () => {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/auth/register`, {
+      await apiRequest('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -42,8 +43,6 @@ const Register = () => {
           password: formData.password
         })
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Unable to create account');
 
       setSuccess(true);
       setTimeout(() => navigate('/login'), 1500);

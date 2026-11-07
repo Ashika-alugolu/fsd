@@ -34,7 +34,7 @@ const seedAdmin = async () => {
         },
         $setOnInsert: { email: ADMIN_EMAIL }
       },
-      { upsert: true, new: true, runValidators: true }
+      { upsert: true, returnDocument: 'after', runValidators: true }
     );
 
     console.log('Admin account is ready.');
