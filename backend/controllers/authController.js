@@ -2,6 +2,8 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
+const ADMIN_EMAIL = 'admin@gmail.com';
+
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
@@ -68,19 +70,17 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: 'Please provide email and password' });
     }
 
-    const user = await User.findOne({ email: email.trim().toLowerCase() })
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail })
       .collation({ locale: 'en', strength: 2 });
 
-    if (
-      user
-      && (user.role !== 'admin' || user.email === 'admin@gmail.com')
-      && (await bcrypt.compare(password, user.password))
-    ) {
+    if (user && (await bcrypt.compare(password, user.password))) {
+      const role = normalizedEmail === ADMIN_EMAIL ? 'admin' : 'student';
       res.json({
         _id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role,
         token: generateToken(user._id)
       });
     } else {
